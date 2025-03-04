@@ -1,0 +1,11 @@
+# Ignore environment files
+.env
+
+# Ignore any YAML file containing credentials
+config.yaml
+
+# Ignore Python cache and virtual environments
+__pycache__/
+*.pyc
+*.pyo
+venv/
