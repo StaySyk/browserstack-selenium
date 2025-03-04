@@ -1,118 +1,86 @@
 import json
-import time
 from selenium import webdriver
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.support.ui import WebDriverWait as W
+from selenium.webdriver.support import expected_conditions as E
 from selenium.common.exceptions import NoSuchElementException
-from selenium.webdriver.chrome.options import Options as ChromeOptions
 
-# Set up Chrome options for BrowserStack
-options = ChromeOptions()
-options.set_capability("sessionName", "BrowserStack S20+ Test")
-driver = webdriver.Chrome(options=options)
+# Minimal ChromeOptions setup
+opts = Options()
+opts.set_capability("sessionName", "BrowserStack Minimal Test")
+driver = webdriver.Remote(options=opts)
+
+# Quick shorthand for WebDriverWait
+wait = lambda timeout=10: W(driver, timeout)
 
 try:
-    # User Login
+    # 1. Go to site & click "Sign in"
     driver.get("https://bstackdemo.com/")
-    WebDriverWait(driver, 10).until(EC.title_contains("StackDemo"))
-    WebDriverWait(driver, 10).until(
-        EC.element_to_be_clickable((By.ID, "signin"))
-    ).click()
+    wait().until(E.title_contains("StackDemo"))
+    wait().until(E.element_to_be_clickable((By.ID, "signin"))).click()
 
-    # Wait for the username field
-    username_field = WebDriverWait(driver, 10).until(
-        EC.element_to_be_clickable((By.ID, "username"))
-    )
-    username_field.click()
-    time.sleep(1)  # Short delay for dropdown to load
-
-    # Try selecting 'demouser' from the dropdown
-    try:
-        demouser_option = WebDriverWait(driver, 5).until(
-            EC.element_to_be_clickable((By.XPATH, "//option[@value='demouser']"))
-        )
-        demouser_option.click()
-    except:
-        driver.execute_script("document.getElementById('username').value = 'demouser';")
-
-    # Confirm the input value
-    assert (
-        driver.execute_script("return document.getElementById('username').value")
-        == "demouser"
+    # 2. Set username & password via JavaScript (bypasses dropdown issues)
+    driver.execute_script("document.getElementById('username').value = 'demouser';")
+    driver.execute_script(
+        "document.getElementById('password').value = 'testingisfun99';"
     )
 
-    # Enter password
-    password_field = driver.find_element(By.ID, "password")
-    password_field.send_keys("testingisfun99")
+    # 3. Remove 'disabled' if needed & click login
+    login_btn = driver.find_element(By.ID, "login-btn")
+    if driver.execute_script("return arguments[0].disabled;", login_btn):
+        driver.execute_script("arguments[0].removeAttribute('disabled');", login_btn)
+    login_btn.click()
 
-    # Click login button
-    login_button = driver.find_element(By.ID, "login-btn")
-
-    # Remove disabled attribute if necessary
-    if driver.execute_script("return arguments[0].disabled;", login_button):
-        driver.execute_script("arguments[0].removeAttribute('disabled');", login_button)
-
-    login_button.click()
-
-    # Filter for Samsung device
-    WebDriverWait(driver, 10).until(
-        EC.element_to_be_clickable(
+    # 4. Filter for Samsung & favorite Galaxy S20+
+    wait().until(
+        E.element_to_be_clickable(
             (By.XPATH, "//span[@class='checkmark' and text()='Samsung']")
         )
     ).click()
-
-    # Find and favorite the Galaxy S20+
-    WebDriverWait(driver, 10).until(
-        EC.element_to_be_clickable(
+    wait().until(
+        E.element_to_be_clickable(
             (
                 By.XPATH,
-                "//p[contains(text(), 'Galaxy S20+')]/ancestor::div[contains(@class, 'shelf-item')]//button[@aria-label='delete']",
+                "//p[contains(text(),'Galaxy S20+')]/ancestor::div[contains(@class,'shelf-item')]//button[@aria-label='delete']",
             )
         )
     ).click()
 
-    # Navigate to favorites page
-    WebDriverWait(driver, 10).until(
-        EC.element_to_be_clickable((By.ID, "favourites"))
-    ).click()
-
-    # Verify Galaxy S20+ is in favorites
-    favorite_item = (
-        WebDriverWait(driver, 10)
+    # 5. Go to favorites & verify Galaxy S20+
+    wait().until(E.element_to_be_clickable((By.ID, "favourites"))).click()
+    item_text = (
+        wait()
         .until(
-            EC.visibility_of_element_located(
+            E.visibility_of_element_located(
                 (
                     By.XPATH,
-                    "//div[contains(@class, 'shelf-container')]//div[contains(@class, 'shelf-item')]//p[contains(@class, 'shelf-item__title') and contains(text(),'Galaxy S20+')]",
+                    "//p[contains(@class,'shelf-item__title') and contains(text(),'Galaxy S20+')]",
                 )
             )
         )
         .text
     )
 
-    if "Galaxy S20+" in favorite_item:
+    # 6. Mark test as passed/failed on BrowserStack
+    if "Galaxy S20+" in item_text:
         driver.execute_script(
-            'browserstack_executor: {"action": "setSessionStatus", "arguments": {"status":"passed", "reason": "Successfully favorited Galaxy S20+"}}'
+            'browserstack_executor: {"action":"setSessionStatus","arguments":{"status":"passed","reason":"Successfully favorited Galaxy S20+"}}'
         )
     else:
         driver.execute_script(
-            'browserstack_executor: {"action": "setSessionStatus", "arguments": {"status":"failed", "reason": "Galaxy S20+ not found in favorites"}}'
+            'browserstack_executor: {"action":"setSessionStatus","arguments":{"status":"failed","reason":"Galaxy S20+ not found in favorites"}}'
         )
 
 except NoSuchElementException as err:
-    message = "Exception: " + str(err.__class__) + str(err)
+    msg = f"Exception: {err.__class__} {err}"
     driver.execute_script(
-        'browserstack_executor: {"action": "setSessionStatus", "arguments": {"status":"failed", "reason": '
-        + json.dumps(message)
-        + "}}"
+        f'browserstack_executor: {{"action":"setSessionStatus","arguments":{{"status":"failed","reason":{json.dumps(msg)}}}}}'
     )
 except Exception as err:
-    message = "Exception: " + str(err.__class__) + str(err)
+    msg = f"Exception: {err.__class__} {err}"
     driver.execute_script(
-        'browserstack_executor: {"action": "setSessionStatus", "arguments": {"status":"failed", "reason": '
-        + json.dumps(message)
-        + "}}"
+        f'browserstack_executor: {{"action":"setSessionStatus","arguments":{{"status":"failed","reason":{json.dumps(msg)}}}}}'
     )
 finally:
     driver.quit()
