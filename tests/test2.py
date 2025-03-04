@@ -7,7 +7,7 @@ from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.chrome.options import Options as ChromeOptions
 
-# Set up Chrome options for BrowserStack
+
 options = ChromeOptions()
 options.set_capability("sessionName", "BrowserStack S20+ Test")
 driver = webdriver.Chrome(options=options)
@@ -20,39 +20,30 @@ try:
         EC.element_to_be_clickable((By.ID, "signin"))
     ).click()
 
-    # Wait for the username field and click it
-    username_field = WebDriverWait(driver, 10).until(
+    # Simple approach for username - click and wait
+    WebDriverWait(driver, 10).until(
         EC.element_to_be_clickable((By.ID, "username"))
-    )
-    username_field.click()
-    time.sleep(1)  # Short delay for dropdown to load
+    ).click()
 
-    # Try selecting 'demouser' from the dropdown
-    try:
-        demouser_option = WebDriverWait(driver, 5).until(
-            EC.element_to_be_clickable((By.XPATH, "//option[@value='demouser']"))
-        )
-        demouser_option.click()
-    except Exception:
-        driver.execute_script("document.getElementById('username').value = 'demouser';")
+    # Select demouser
+    WebDriverWait(driver, 10).until(
+        EC.element_to_be_clickable((By.XPATH, "//div[text()='demouser']"))
+    ).click()
 
-    # Confirm the input value
-    assert (
-        driver.execute_script("return document.getElementById('username').value")
-        == "demouser"
-    )
+    # Simple approach for password - click and wait
+    WebDriverWait(driver, 10).until(
+        EC.element_to_be_clickable((By.ID, "password"))
+    ).click()
 
-    # Enter password: target the actual input element inside the password container
-    password_field = WebDriverWait(driver, 10).until(
-        EC.element_to_be_clickable((By.CSS_SELECTOR, "#password input"))
-    )
-    password_field.send_keys("testingisfun99")
+    # Select password
+    WebDriverWait(driver, 10).until(
+        EC.element_to_be_clickable((By.XPATH, "//div[text()='testingisfun99']"))
+    ).click()
 
     # Click login button
-    login_button = driver.find_element(By.ID, "login-btn")
-    if driver.execute_script("return arguments[0].disabled;", login_button):
-        driver.execute_script("arguments[0].removeAttribute('disabled');", login_button)
-    login_button.click()
+    WebDriverWait(driver, 10).until(
+        EC.element_to_be_clickable((By.ID, "login-btn"))
+    ).click()
 
     # Filter for Samsung device
     WebDriverWait(driver, 10).until(
