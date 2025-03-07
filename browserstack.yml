@@ -18,3 +18,4 @@ projectName: BrowserStack Challenge
 debug: true
 networkLogs: false
 consoleLogs: info
+selfHeal: true
