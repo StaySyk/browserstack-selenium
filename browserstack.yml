@@ -7,10 +7,10 @@ platforms:
     osVersion: Ventura
     browserName: Firefox
     browserVersion: latest
-  - deviceName: Samsung Galaxy S22
-    osVersion: 12.0
-    browserName: chrome
-    deviceOrientation: portrait
+  # - deviceName: Samsung Galaxy S22
+  #   osVersion: 12.0
+  #   browserName: chrome
+  #   deviceOrientation: portrait
 browserstackLocal: true
 buildName: bstack-demo
 buildIdentifier: ${BUILD_NUMBER}
